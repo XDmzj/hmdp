@@ -206,8 +206,41 @@ return Result.ok(token);
 
 ## 登录验证
 
+
+
 拦截器
-![[Pasted image 20260729163816.png]]这段代码是黑马点评项目中 **`RefreshTokenInterceptor`（Token 刷新拦截器）** 的核心实现方法 `preHandle`。
+```java
+//预拦截  
+@Override  
+public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {  
+    //1.获取请求头中的token  
+    String token = request.getHeader("authorization");  
+    if(StrUtil.isBlank(token)){  
+        return true;  
+    }  
+  
+    //2.基于token获取redis中的用户  
+    String key = RedisConstants.LOGIN_USER_KEY + token;  
+    Map<Object, Object> userMap = stringRedisTemplate.opsForHash().entries(key);  
+    //3.判断用户是否在存在  
+    if(userMap.isEmpty()){  
+        return true;  
+    }  
+    //5.将查询到的hash数据转为UserDTO对象  
+    UserDTO userDTO = BeanUtil.fillBeanWithMap(userMap,new UserDTO(),false);  
+  
+    //6.存在，保存用户信息到ThreadLocal  
+    UserHolder.saveUser(userDTO);  
+  
+    //7.刷新token的有效期  
+    stringRedisTemplate.expire(key,RedisConstants.LOGIN_USER_TTL, TimeUnit.MINUTES);  
+  
+    //8.放行  
+    return true;  
+}
+```
+
+这段代码是黑马点评项目中 **`RefreshTokenInterceptor`（Token 刷新拦截器）** 的核心实现方法 `preHandle`。
 
 它的根本作用是：**“无差别地尝试刷脸”** —— 无论用户访问的是什么接口，只要请求头里带了有效 Token，就去 Redis 里把用户信息查出来存入 `ThreadLocal`，并**把该 Token 在 Redis 里的过期时间重新重置为 30 分钟（无感续期）**。
 
@@ -283,6 +316,9 @@ return true;
 
 - **逻辑**：返回 `true`，告诉 Spring MVC 当前拦截器执行完毕，允许请求进入下一个拦截器或目标 `Controller`。
     
+#### 优化思路
+
+![[Pasted image 20260729165905.png]]
 
  核心设计思想小结
 
