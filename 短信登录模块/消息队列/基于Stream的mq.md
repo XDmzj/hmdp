@@ -43,6 +43,8 @@
 
 #### 1. `XADD` — 生产者发消息
 
+![[Pasted image 20260814152728.png]]
+
 ```bash
 XADD mystream * field1 value1 field2 value2
 ```
@@ -67,6 +69,8 @@ String messageId = stringRedisTemplate.opsForStream()
 
 #### 2. `XREAD` — 简单消费（无消费组）
 
+![[Pasted image 20260814152757.png]]
+
 ```bash
 XREAD COUNT 1 BLOCK 2000 STREAMS mystream 0
 ```
@@ -83,7 +87,7 @@ XREAD COUNT 1 BLOCK 2000 STREAMS mystream 0
 #### 3. 消费组命令
 
 **创建消费组：**
-
+![[Pasted image 20260814160343.png|552]]
 ```bash
 XGROUP CREATE mystream group1 0
 ```
@@ -93,7 +97,7 @@ XGROUP CREATE mystream group1 0
 -   `$`：只消费新消息
 
 **组内消费：**
-
+![[Pasted image 20260814160324.png]]
 ```bash
 XREADGROUP GROUP group1 consumer1 COUNT 1 BLOCK 2000 STREAMS mystream >
 ```
@@ -235,22 +239,7 @@ public void consume() {
 
 ---
 
-### 十、和黑马点评的关系
-
-黑马点评中用 `BlockingQueue` 做的简易 MQ，如果换成 **Redis Stream** 就能解决服务重启丢订单的问题：
-
-```java
-// 优化：生产者
-XADD voucher_order_stream * userId 1001 voucherId 5001
-
-// 消费者：后台线程 XREADGROUP 消费
-// 处理完 XACK
-// 如果处理失败，不 XACK，消息留在 Pending List 里等待重试
-```
-
----
-
-### 十一、总结笔记
+### 十、总结笔记
 
 -   **Stream**：Redis 5.0 的正式 MQ 方案，带 ACK + 消费组
 -   **核心概念**：消息 ID、Consumer Group、Pending List、XACK
