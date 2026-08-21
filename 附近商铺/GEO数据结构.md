@@ -1,4 +1,4 @@
-## Redis GEO 数据结构
+ ## Redis GEO 数据结构
 
 ---
 
@@ -69,43 +69,23 @@ GEOSEARCHSTORE result:geo shop:geo FROMLONLAT 116.397128 39.916527 BYRADIUS 5 km
 
 ---
 
-### 四、黑马点评中的使用
+### 四、练习
 
-**业务场景**：根据用户当前位置，查找附近的商户。
+![[Pasted image 20260821111034.png]]
 
-```java
-public Result queryShopByGeo(Integer typeId, Double x, Double y) {
-    String key = SHOP_GEO_KEY + typeId;  // 如 shop:geo:1
-    
-    // GEOSEARCH 查询附近商户
-    List<GeoResult<RedisGeoCommands.GeoLocation<String>>> results = 
-        stringRedisTemplate.opsForGeo().search(
-            key,
-            GeoReference.fromCoordinate(x, y),
-            new Distance(5, Metrics.KILOMETERS),
-            RedisGeoCommands.GeoSearchCommandArgs.newGeoSearchArgs()
-                .includeDistance()     // 返回距离
-                .sortAscending()       // 按距离升序
-                .limit(10)             // 只取前 10 个
-        );
-    
-    // 解析结果
-    List<Map<String, Object>> list = new ArrayList<>();
-    for (GeoResult<RedisGeoCommands.GeoLocation<String>> result : results) {
-        String shopId = result.getContent().getName();   // 商户ID
-        double distance = result.getDistance().getValue(); // 距离
-        // 查数据库获取商户详情...
-    }
-    return Result.ok(list);
-}
+```redis
+# 添加坐标数据
+GEOADD g1 116.378248 39.865275 bjnz 116.42803 39.903738 bjz 116.322287 39.893729 bjxz
+# 计算北京西站到北京站的距离
+GEODIST g1 bjnz bjxz km
+# 搜索天安门附近10km内的所有火车站，并按照距离升序排序
+GEOSEARCH g1 FROMLONLAT 116.397904 39.909005 BYRADIUS 10 km WITHDIST
+
 ```
 
-**对应的 Redis 命令**：
+`GEODIST`计算距离，默认的单位是米
 
-```bash
-GEOSEARCH shop:geo:1 FROMLONLAT 116.397128 39.916527 BYRADIUS 5 km 
-    ASC COUNT 10 WITHCOORD WITHDIST
-```
+
 
 ---
 
