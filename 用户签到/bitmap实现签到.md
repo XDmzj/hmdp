@@ -38,3 +38,29 @@
 # 实现
 
 ![[Pasted image 20260822121746.png]]
+
+
+service
+```java
+    /**
+     * 用户签到
+     *
+     * @return
+     */
+    @Override
+    public Result sign() {
+        // 获取当前登录用户
+        Long userId = ThreadLocalUtls.getUser().getId();
+        // 获取日期
+        LocalDateTime now = LocalDateTime.now();
+        // 拼接key
+        String keySuffix = now.format(DateTimeFormatter.ofPattern(":yyyyMM"));
+        String key = USER_SIGN_KEY + userId + keySuffix;
+        // 获取今天是本月的第几天
+        int dayOfMonth = now.getDayOfMonth();
+        // 写入Redis SETBIT key offset 1
+        stringRedisTemplate.opsForValue().setBit(key, dayOfMonth - 1, true);
+        return Result.ok();
+    }
+
+```
